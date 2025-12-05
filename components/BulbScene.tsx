@@ -10,12 +10,15 @@ interface BulbSceneProps {
 
 // Config
 const INITIAL_SEGMENT_COUNT = 40;
-const BULB_RADIUS = 22; // Reduced size for collision
+const BULB_RADIUS = 30; // Radius for collision
 
 export const BulbScene: React.FC<BulbSceneProps> = ({ isHammerMode, onToggleHammer }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
+  // Assets
+  const backgroundRef = useRef<HTMLImageElement | null>(null);
+
   // Physics State
   const ropeRef = useRef<RopeSystem | null>(null);
   const [isBulbOn, setIsBulbOn] = useState(false);
@@ -24,6 +27,16 @@ export const BulbScene: React.FC<BulbSceneProps> = ({ isHammerMode, onToggleHamm
   
   // Mount State (Position of the wall peg)
   const mountRef = useRef<{ x: number; y: number } | null>(null);
+
+  // Initialize Assets
+  useEffect(() => {
+    const img = new Image();
+    // Dark concrete texture to match the #1E1E1E aesthetic
+    img.src = "https://images.unsplash.com/photo-1487147264018-f937fba0c817?q=80&w=2000&auto=format&fit=crop";
+    img.onload = () => {
+        backgroundRef.current = img;
+    };
+  }, []);
 
   // Initialize Physics
   useEffect(() => {
@@ -168,9 +181,17 @@ export const BulbScene: React.FC<BulbSceneProps> = ({ isHammerMode, onToggleHamm
       // Clear Canvas
       ctx.clearRect(0, 0, width, height);
 
-      // 1. Draw Background
-      ctx.fillStyle = '#1E1E1E';
-      ctx.fillRect(0, 0, width, height);
+      // 1. Draw Background Image
+      if (backgroundRef.current) {
+          const img = backgroundRef.current;
+          const scale = Math.max(width / img.width, height / img.height);
+          const x = (width / 2) - (img.width / 2) * scale;
+          const y = (height / 2) - (img.height / 2) * scale;
+          ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+      } else {
+          ctx.fillStyle = '#1E1E1E';
+          ctx.fillRect(0, 0, width, height);
+      }
 
       // 2. Draw Wooden Peg Mount
       if (mountRef.current) {
@@ -402,27 +423,27 @@ function drawBulbAssembly(ctx: CanvasRenderingContext2D, x: number, y: number, a
       ctx.translate(x, y);
       ctx.rotate(angle);
 
-      // Scale down by ~40% (0.6x multiplier roughly applied to previous dims)
+      // --- Modern Cone Shade & Socket ---
       
       // 1. The Cord Entry
       ctx.fillStyle = '#080808';
       ctx.beginPath();
-      ctx.roundRect(-3, -35, 6, 10, 2);
+      ctx.roundRect(-4, -55, 8, 15, 2);
       ctx.fill();
 
       // 2. The Socket Cylinder
       ctx.fillStyle = '#111';
       ctx.beginPath();
-      ctx.roundRect(-7, -26, 14, 16, 2); 
+      ctx.roundRect(-10, -40, 20, 25, 2); 
       ctx.fill();
       
       // 3. The Cone Shade
       const shadeColor = '#080808'; // Matte Black
       ctx.beginPath();
-      ctx.moveTo(-6, -12); // Top left
-      ctx.lineTo(6, -12);  // Top right
-      ctx.lineTo(22, 24);   // Bottom right flared
-      ctx.lineTo(-22, 24);  // Bottom left flared
+      ctx.moveTo(-10, -20); // Top left
+      ctx.lineTo(10, -20);  // Top right
+      ctx.lineTo(35, 40);   // Bottom right flared
+      ctx.lineTo(-35, 40);  // Bottom left flared
       ctx.closePath();
       
       ctx.fillStyle = shadeColor;
@@ -430,7 +451,7 @@ function drawBulbAssembly(ctx: CanvasRenderingContext2D, x: number, y: number, a
       
       // Shade interior (visible at bottom)
       ctx.beginPath();
-      ctx.ellipse(0, 24, 22, 4, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, 40, 35, 6, 0, 0, Math.PI * 2);
       ctx.fillStyle = isOn ? '#fff' : '#222'; 
       ctx.fill();
 
@@ -438,13 +459,13 @@ function drawBulbAssembly(ctx: CanvasRenderingContext2D, x: number, y: number, a
       const glassColor = isOn ? 'rgba(255, 250, 240, 0.95)' : 'rgba(255, 255, 255, 0.3)';
       
       ctx.beginPath();
-      ctx.arc(0, 28, 8, 0, Math.PI * 2);
+      ctx.arc(0, 45, 12, 0, Math.PI * 2);
       ctx.fillStyle = glassColor;
       
-      // Only add blur if ON
+      // Only add blur if ON, otherwise it looks foggy in the dark
       if (isOn) {
         ctx.shadowColor = '#fff';
-        ctx.shadowBlur = 15;
+        ctx.shadowBlur = 20;
       }
       
       ctx.fill();
